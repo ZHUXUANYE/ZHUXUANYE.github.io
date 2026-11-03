@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>城市文旅导览官 · 绵阳八景智能导览 Agent</title>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;background:#f5f5f2;color:#1a1a1a;}
+  .wrap{max-width:680px;margin:0 auto;padding:20px 16px 40px;}
+  .top{display:flex;gap:10px;align-items:center;margin-bottom:6px;}
+  .avatar{width:46px;height:46px;border-radius:50%;background:#378ADD;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;flex-shrink:0;}
+  .top h1{font-size:17px;font-weight:600;margin:0;}
+  .top p{font-size:12px;color:#888;margin:0;}
+  .sub{font-size:12px;color:#aaa;margin-bottom:14px;}
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .tabs button{font-size:13px;padding:8px 16px;border:1px solid #ccc;border-radius:999px;background:#fff;cursor:pointer;color:#555;}
+  .tabs button.on{background:#378ADD;color:#fff;border-color:transparent;}
+  .list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .chip{font-size:13px;padding:6px 14px;border:1px solid #ccc;border-radius:999px;background:#fff;cursor:pointer;}
+  .chip.on{border-color:#378ADD;color:#378ADD;background:#eef6ff;}
+  .card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+  .card .hd{font-size:12px;color:#999;margin-bottom:8px;}
+  .card h4{font-size:16px;font-weight:600;margin:0 0 4px;}
+  .tag{display:inline-block;font-size:11px;color:#185FA5;background:#e8f1fb;border-radius:4px;padding:2px 8px;margin-bottom:8px;}
+  .card p{font-size:14px;line-height:1.8;margin:0 0 10px;}
+  .media{font-size:13px;color:#185FA5;background:#eef3fa;border-radius:8px;padding:10px 12px;margin-bottom:10px;line-height:1.7;}
+  .row{display:flex;gap:8px;}
+  .row button{flex:1;font-size:13px;padding:9px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;}
+  .row button.pri{background:#378ADD;color:#fff;border-color:transparent;}
+  .quiz .opt{display:block;width:100%;text-align:left;font-size:14px;padding:11px 12px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;margin-bottom:8px;}
+  .quiz .opt.ok{background:#eaf3de;color:#3B6D11;border-color:transparent;}
+  .quiz .opt.bad{background:#fcebeb;color:#A32D2D;border-color:transparent;}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .metric{background:#f1efe8;border-radius:8px;padding:12px;text-align:center;}
+  .metric b{font-size:22px;font-weight:600;display:block;}
+  .metric span{font-size:11px;color:#666;}
+  .route-step{display:flex;align-items:center;gap:12px;}
+  .route-no{width:30px;height:30px;border-radius:50%;background:#378ADD;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;}
+  .route-info{flex:1;}
+  .route-info h4{margin:0;font-size:15px;}
+  .route-info p{margin:2px 0 0;font-size:12px;color:#999;}
+  .route-info button{font-size:12px;padding:4px 12px;border:1px solid #378ADD;color:#378ADD;border-radius:6px;background:#fff;cursor:pointer;margin-top:6px;}
+  .banner{font-size:12px;color:#666;background:#fbfaf6;border:1px dashed #d8d8d0;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.7;}
+  .hint{font-size:12px;color:#999;text-align:center;margin-top:10px;line-height:1.6;}
+  .reset{font-size:12px;color:#999;text-align:center;margin-top:14px;cursor:pointer;text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="avatar">游</div>
+    <div><h1>城市文旅导览官</h1><p>绵阳八景 · 会规划路线、记得你去过哪、还考你记住了没</p></div>
+  </div>
+  <div class="sub">感知你的点击 → 判断你的意图 → 检索知识库 → 讲解 → 写进记忆 → 决定下一步</div>
+  <div class="tabs" id="tabs">
+    <button class="on" onclick="sw(0)">地点讲解</button>
+    <button onclick="sw(1)">路线规划</button>
+    <button onclick="sw(2)">闯关问答</button>
+    <button onclick="sw(3)">游览看板</button>
+  </div>
+  <div id="panel"></div>
+  <div class="reset" onclick="resetAll()">清空游览记录（重新开始）</div>
+</div>
+<script>
+(function(){
+  // ===== 知识库：绵阳八景（提示词约束下的事实来源，禁止编造） =====
+  var pois={
+    ywl:{name:"越王楼",cat:"媒体地标",story:"“绵州州府何磊落，显庆年间越王楼。”越王楼始建于唐显庆年间，为唐太宗第八子越王李贞任绵州刺史时所建，与黄鹤楼、岳阳楼、滕王阁并称唐代四大名楼。它临涪江而建，历经千年屡毁屡建，如今高达 99 米，是绵阳最醒目的城市名片。登楼远眺，涪江如带，城郭在望，历代文人李白、杜甫都曾在此留下诗篇。",media:"越王楼是绵阳城市形象片的“开场标配”，无数航拍镜头从它起飞——它早已不只是楼，而是绵阳在影像里最经典的那张脸。"},
+    fls:{name:"富乐山",cat:"历史文化",story:"富乐山位于绵阳城东，因三国时刘备“富哉，今日之乐乎”的感叹而得名。这里林木葱茏，是绵阳人晨练、踏青的“城市绿肺”。山上有富乐阁、豫州园等景点，登顶可俯瞰绵阳全城。它既有三国的历史厚重，又有市民日常的烟火气，是历史与生活交织的一处所在。",media:"富乐山是绵阳电视塔与城市天际线同框的最佳机位，很多城市风光片里“山、城、塔”一镜到底的画面，都出自这里的制高点。"},
+    sss:{name:"圣水寺",cat:"人文古迹",story:"圣水寺坐落在绵阳城西塔子山麓，始建于唐，因寺内一眼终年不竭的清泉而得名“圣水”。寺内香火鼎盛，千手观音、卧佛等造像庄严精美，是川西北重要的佛教圣地。每逢初一十五，香客络绎不绝，钟声与松涛相和，自有一份闹市之外的宁静。",media:"圣水寺的晨钟暮鼓常被城市慢直播作为固定机位收录，几百万人在屏幕前陪它看香火与晨雾一起升起。"},
+    jhs:{name:"九皇山",cat:"自然风光",story:"九皇山位于绵阳北川，因传说大禹曾在此祭祀九天而得名，是集自然风光与羌族文化于一体的高山景区。这里有悬崖栈道、天然溶洞猿王洞、惊险的玻璃吊桥，还有羌族碉楼与篝火晚会。春看杜鹃、夏避酷暑、秋赏红叶、冬观雪景，四季皆景。",media:"九皇山的玻璃栈道与云海，是各类短视频里绵阳“惊险+壮美”的代表画面，一次次把“险境中的浪漫”送上热搜。"},
+    bcq:{name:"北川羌城",cat:"人文历史",story:"这里是 2008 年“5·12”汶川特大地震的极重灾区，如今保留为地震遗址与纪念园区。走在老街，时间仿佛凝固在那一刻；而一旁的纪念馆，则讲述着灾后重建、众志成城的历程。它既是沉重的记忆，更是向死而生的见证，提醒着每一个来访者生命的珍贵。",media:"这里是无数纪录片与新闻镜头反复抵达的地方——从地震瞬间到新北川拔地而起，它承载了当代中国影像里一段无法绕开的集体记忆。"},
+    qqs:{name:"七曲山大庙",cat:"人文古迹",story:"七曲山大庙位于梓潼县七曲山，是全国重点文物保护单位，主祀文昌帝君，被尊为“文昌祖庭”。这里古柏参天，是全国最大的纯古柏林，庙宇依山而建、气势恢宏。千百年来，无数读书人到此祈求金榜题名，香火千年不绝，是“文昌文化”的源头所在。",media:"每年中高考前后，七曲山“文昌祈福”都是地方新闻与短视频的固定题材，“学子拜文昌”的画面，成了绵阳教育大市形象的一个鲜活注脚。"},
+    lbg:{name:"李白故里",cat:"人文古迹",story:"江油青莲镇是诗仙李白的出生地，这里有太白碑林、陇西院、李白纪念馆等。漫步其间，碑林上镌刻着李白的千古名篇，“床前明月光”从这里走向世界。它既是一座园林，更是一处能让每一个中国人亲近“诗仙”的文化圣地。",media:"李白故里是绵阳对外传播的“文化 IP”——每逢中秋、诗歌节，镜头总会回到青莲，让“举头望明月”与这座城市完成一次跨时空的呼应。"},
+    xhh:{name:"仙海湖",cat:"自然风光",story:"仙海湖是绵阳近郊的一处人工湖，因传说仙人曾在此沐浴而得名，水面开阔、碧波荡漾。这里可以环湖骑行、游船垂钓，还有沙滩与亲水步道，是绵阳人周末休闲的“后花园”。晴天时湖光山色一望无际，是放松身心、亲近自然的好去处。",media:"仙海湖是绵阳各类城市宣传片里“宜居”二字的画面代名词——蓝天、碧水、绿岸一镜到底，撑起了这座城“生态宜居”的视觉印象。"}
+  };
+  // ===== 闯关题库（每个地点一道，考“记住了没”） =====
+  var quizzes={
+    ywl:{q:"越王楼与哪三座名楼并称“唐代四大名楼”？",a:"黄鹤楼、岳阳楼、滕王阁",opts:["黄鹤楼、岳阳楼、滕王阁","鹳雀楼、黄鹤楼、岳阳楼","岳阳楼、滕王阁、鹳雀楼"]},
+    fls:{q:"富乐山因谁的哪一句感叹而得名？",a:"刘备“富哉，今日之乐乎”",opts:["刘备“富哉，今日之乐乎”","诸葛亮“鞠躬尽瘁”","关羽“义薄云天”"]},
+    sss:{q:"圣水寺因什么而得名“圣水”？",a:"寺内一眼终年不竭的清泉",opts:["寺内一眼终年不竭的清泉","山上的瀑布","皇帝赐名的御水"]},
+    jhs:{q:"九皇山因什么传说而得名？",a:"大禹曾在此祭祀九天",opts:["大禹曾在此祭祀九天","九位皇帝驾临","九座山峰环绕"]},
+    bcq:{q:"北川羌城保留了什么重要遗址？",a:"5·12 汶川特大地震遗址",opts:["5·12 汶川特大地震遗址","古代羌族王宫遗址","古代战场遗址"]},
+    qqs:{q:"七曲山大庙主祀哪位神明，被尊为什么？",a:"文昌帝君，文昌祖庭",opts:["文昌帝君，文昌祖庭","关圣帝君，武圣祖庭","药王菩萨，医圣祖庭"]},
+    lbg:{q:"李白故里位于绵阳的哪个地方？",a:"江油青莲镇",opts:["江油青莲镇","梓潼七曲山","北川羌城"]},
+    xhh:{q:"仙海湖得名的传说是关于什么？",a:"仙人曾在此沐浴",opts:["仙人曾在此沐浴","湖中产仙鱼","有神仙居住的岛"]}
+  };
+
+  // ===== 状态 + localStorage 持久化（记忆环的真实实现） =====
+  var KEY='mianyang_guide_agent_v1';
+  function load(){
+    var def={tab:0,visited:{},correct:{},total:0,ok:0,fav:{},curPoi:'ywl'};
+    try{var s=localStorage.getItem(KEY);if(s){var d=JSON.parse(s);for(var k in def){if(d[k]!==undefined)def[k]=d[k];}return def;}}catch(e){}
+    return def;
+  }
+  var state=load();
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+  var panel=document.getElementById('panel');
+  window.sw=function(i){
+    state.tab=i;
+    document.querySelectorAll('#tabs button').forEach(function(b,idx){b.className=idx===i?'on':'';});
+    render();
+  };
+  function render(){
+    if(state.tab===0)renderExplain();
+    else if(state.tab===1)renderRoute();
+    else if(state.tab===2)renderQuiz();
+    else renderDash();
+  }
+
+  function renderExplain(){
+    var p=pois[state.curPoi];
+    var chips=Object.keys(pois).map(function(k){
+      var c=k===state.curPoi?'chip on':'chip';
+      return '<span class="'+c+'" onclick="pick(\''+k+'\')">'+pois[k].name+'</span>';
+    }).join('');
+    // 感知 + 记忆：点过即记为“已游览”，写入 logs
+    state.visited[state.curPoi]=1; save();
+    var html='<div class="card"><div class="hd">选择地点 · 智能讲解（点击即感知，讲解即记录）</div>'
+      +'<div class="list">'+chips+'</div>'
+      +'<h4>'+p.name+'</h4><span class="tag">'+p.cat+'</span>'
+      +'<p>'+p.story+'</p>'
+      +'<div class="media">媒体视角 · '+p.media+'</div>'
+      +'<div class="row">'
+      +'<button onclick="fav()">'+(state.fav[state.curPoi]?'已收藏 ★':'收藏')+'</button>'
+      +'<button onclick="toQuiz()">考考我</button>'
+      +'<button class="pri" onclick="toRoute()">排路线</button>'
+      +'</div></div>';
+    panel.innerHTML=html;
+  }
+
+  function renderRoute(){
+    // 决策：按“媒体地标→历史文化→人文古迹→自然风光”的体验节奏规划
+    var order=['ywl','fls','bcq','lbg','sss','qqs','jhs','xhh'];
+    var keys=order.filter(function(k){return pois[k];});
+    var items=keys.map(function(k,i){
+      var p=pois[k];
+      var done=state.visited[k]?' <span style="font-size:11px;color:#3B6D11;">✓已游</span>':'';
+      return '<div class="card"><div class="route-step">'
+        +'<div class="route-no">'+(i+1)+'</div>'
+        +'<div class="route-info"><h4>'+p.name+done+'</h4><p>'+p.cat+' · '+p.story.slice(0,26)+'…</p>'
+        +'<button onclick="goto(\''+k+'\')">听讲解</button></div></div></div>';
+    }).join('');
+    panel.innerHTML='<div class="card"><div class="hd">个性化路线 · 智能规划</div>'
+      +'<div class="banner">已按“媒体地标 → 历史文化 → 人文古迹 → 自然风光”的体验节奏，为你排好绵阳八景的完整游览顺序（约 1–2 天）。已游过的地点会打勾，点击任意一站即可听讲解。</div></div>'
+      +items;
+  }
+
+  function renderQuiz(){
+    var k=state.curPoi;
+    var q=quizzes[k];
+    if(!state.quizState||state.quizState.poi!==k){state.quizState={poi:k,answered:false,picked:null};}
+    var opts=(q.opts||[]).map(function(o){
+      var cls='opt';
+      if(state.quizState.answered){
+        if(o===q.a)cls='opt ok';
+        else if(state.quizState.picked===o)cls='opt bad';
+      }
+      return '<button class="'+cls+'" onclick="ans(\''+o.replace(/'/g,'\\\'')+'\')">'+o+'</button>';
+    }).join('');
+    var fb='';
+    if(state.quizState.answered){
+      fb=state.quizState.picked===q.a?'<div class="media">✓ 答对了！你记住了，已计入看板。</div>':'<div class="media">✗ 正确答案是「'+q.a+'」，回去再听一遍讲解吧。</div>';
+    }
+    panel.innerHTML='<div class="card quiz"><div class="hd">闯关问答 · '+pois[k].name+'（考察“记住了没”）</div><h4>'+q.q+'</h4>'+opts+fb+'</div>';
+  }
+
+  function renderDash(){
+    var vis=Object.keys(state.visited).length;
+    var favc=Object.keys(state.fav).length;
+    var acc=state.total?Math.round(state.ok/state.total*100):0;
+    panel.innerHTML='<div class="card"><div class="hd">我的游览看板（记忆 · 已写入本地数据库）</div>'
+      +'<div class="metrics">'
+      +'<div class="metric"><b>'+vis+'</b><span>已游览</span></div>'
+      +'<div class="metric"><b>'+state.ok+'/'+state.total+'</b><span>答对</span></div>'
+      +'<div class="metric"><b>'+acc+'%</b><span>正确率</span></div>'
+      +'<div class="metric"><b>'+favc+'</b><span>已收藏</span></div>'
+      +'</div></div>'
+      +'<div class="card"><div class="hd">已游览地点</div>'
+      +(vis?Object.keys(state.visited).map(function(k){return '<span class="chip" style="margin:4px">'+pois[k].name+'</span>';}).join(''):'<p style="font-size:13px;color:#999;">还没游览任何地点</p>')
+      +'</div>'
+      +'<div class="hint">这就是 Agent 的“记忆”能力：你的每一次点击、答题、收藏都被持久化保存，<br>关闭页面再打开，记录依然在——跨会话记住你学到哪了。</div>';
+  }
+
+  window.pick=function(k){state.curPoi=k;state.quizState=null;renderExplain();};
+  window.fav=function(){var k=state.curPoi;if(state.fav[k])delete state.fav[k];else state.fav[k]=1;save();renderExplain();};
+  window.toQuiz=function(){state.quizState=null;sw(2);};
+  window.toRoute=function(){sw(1);};
+  window.goto=function(k){state.curPoi=k;state.quizState=null;sw(0);};
+  window.ans=function(o){
+    if(state.quizState.answered)return;
+    var q=quizzes[state.curPoi];
+    state.quizState.picked=o;state.quizState.answered=true;
+    state.total++;if(o===q.a)state.ok++;else state.correct[state.curPoi]=1;
+    save();renderQuiz();
+  };
+  window.resetAll=function(){if(confirm('确定清空所有游览记录吗？')){localStorage.removeItem(KEY);state={tab:0,visited:{},correct:{},total:0,ok:0,fav:{},curPoi:'ywl'};render();}};
+  render();
+})();
+</script>
+</body>
+</html>
